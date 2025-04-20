@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Отчет Салона Красоты</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table, td, th { border: 1px solid #ccc; border-collapse: collapse; padding: 5px; text-align: center; }
+    table { margin-bottom: 30px; width: 100%; max-width: 1200px; }
+    .summary { margin-top: 10px; font-weight: bold; }
+    select { width: 60px; }
+  </style>
+</head>
+<body>
+  <h2>Отчет по мастерам</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Мастер</th>
+        <th colspan="11">Суммы услуг (с учетом скидки)</th>
+        <th>Общая сумма</th>
+        <th>Зарплата (40%)</th>
+      </tr>
+    </thead>
+    <tbody id="mastersTable">
+      <!-- Заполняется JS -->
+    </tbody>
+  </table>
+
+  <h2>Финансовый отчет за день</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Тип оплаты</th>
+        <th colspan="11">Суммы</th>
+        <th>Общая сумма</th>
+        <th>(Без скидки)</th>
+      </tr>
+    </thead>
+    <tbody id="paymentTable">
+      <!-- Заполняется JS -->
+    </tbody>
+  </table>
+
+  <script>
+    const masters = ['Лиза', 'Даша', 'Катя Д', 'Ангелина', 'Катя С', 'Настя', 'Вика', 'Ира', 'Аня', 'Яна ресницы', 'Настя брови'];
+    const types = ['Чек', 'Перевод', 'Наличка'];
+
+    const mastersTable = document.getElementById('mastersTable');
+    const paymentTable = document.getElementById('paymentTable');
+
+    function createInput(masterIndex, serviceIndex) {
+      const priceInput = document.createElement('input');
+      priceInput.type = 'number';
+      priceInput.min = 0;
+      priceInput.step = 1;
+      priceInput.dataset.master = masterIndex;
+      priceInput.dataset.service = serviceIndex;
+
+      const select = document.createElement('select');
+      const noDiscount = new Option('0%', '0');
+      const discount5 = new Option('5%', '5');
+      const discount10 = new Option('10%', '10');
+      [noDiscount, discount5, discount10].forEach(opt => select.add(opt));
+      select.dataset.master = masterIndex;
+      select.dataset.service = serviceIndex;
+
+      const container = document.createElement('div');
+      container.appendChild(priceInput);
+      container.appendChild(select);
+
+      priceInput.addEventListener('input', calculate);
+      select.addEventListener('change', calculate);
+
+      return container;
+    }
+
+    function createMasterRow(masterName, index) {
+      const row = document.createElement('tr');
+      const nameCell = document.createElement('td');
+      nameCell.textContent = masterName;
+      row.appendChild(nameCell);
+
+      for (let i = 0; i < 11; i++) {
+        const cell = document.createElement('td');
+        cell.appendChild(createInput(index, i));
+        row.appendChild(cell);
+      }
+
+      const sumCell = document.createElement('td');
+      sumCell.id = `sum-${index}`;
+      row.appendChild(sumCell);
+
+      const salaryCell = document.createElement('td');
+      salaryCell.id = `salary-${index}`;
+      row.appendChild(salaryCell);
+
+      return row;
+    }
+
+    function createPaymentRow(type) {
+      const row = document.createElement('tr');
+      const nameCell = document.createElement('td');
+      nameCell.textContent = type;
+      row.appendChild(nameCell);
+
+      for (let i = 0; i < 11; i++) {
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.min = 0;
+        input.step = 1;
+        input.className = `payment-${type.toLowerCase()}`;
+        input.addEventListener('input', calculate);
+
+        const cell = document.createElement('td');
+        cell.appendChild(input);
+        row.appendChild(cell);
+      }
+
+      const totalCell = document.createElement('td');
+      totalCell.id = `total-${type.toLowerCase()}`;
+      row.appendChild(totalCell);
+
+      const noDiscountCell = document.createElement('td');
+      noDiscountCell.id = `nondiscount-${type.toLowerCase()}`;
+      row.appendChild(noDiscountCell);
+
+      return row;
+    }
+
+    masters.forEach((name, index) => {
+      mastersTable.appendChild(createMasterRow(name, index));
+    });
+
+    types.forEach(type => {
+      paymentTable.appendChild(createPaymentRow(type));
+    });
+
+    function calculate() {
+      let overallSum = 0;
+      masters.forEach((_, masterIndex) => {
+        let sum = 0;
+        for (let i = 0; i < 11; i++) {
+          const input = document.querySelector(`input[data-master="${masterIndex}"][data-service="${i}"]`);
+          const select = document.querySelector(`select[data-master="${masterIndex}"][data-service="${i}"]`);
+          const value = parseFloat(input.value) || 0;
+          const discount = parseFloat(select.value);
+          const discounted = value - (value * discount / 100);
+          sum += discounted;
+        }
+        document.getElementById(`sum-${masterIndex}`).textContent = sum.toFixed(2);
+        document.getElementById(`salary-${masterIndex}`).textContent = (sum * 0.4).toFixed(2);
+        overallSum += sum;
+      });
+
+      types.forEach(type => {
+        let total = 0;
+        let nonDiscounted = 0;
+        const inputs = document.querySelectorAll(`.payment-${type.toLowerCase()}`);
+        inputs.forEach(input => {
+          const val = parseFloat(input.value) || 0;
+          total += val;
+          nonDiscounted += val; // Можно модифицировать, если нужна логика скидок
+        });
+        document.getElementById(`total-${type.toLowerCase()}`).textContent = total.toFixed(2);
+        document.getElementById(`nondiscount-${type.toLowerCase()}`).textContent = nonDiscounted.toFixed(2);
+      });
+    }
+  </script>
+</body>
+</html>
